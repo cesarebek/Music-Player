@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlay,
@@ -16,7 +16,26 @@ const Player = ({
   songs,
   setCurrentSong,
   currentSong,
+  setSongs,
 }) => {
+  //UseEffect
+  useEffect(() => {
+    const newSongs = songs.map((song) => {
+      if (song.id === currentSong.id) {
+        return {
+          ...song,
+          active: true,
+        };
+      } else {
+        return {
+          ...song,
+          active: false,
+        };
+      }
+    });
+    setSongs(newSongs);
+  }, [currentSong]);
+
   //Functions
   const playSongHandler = () => {
     //Implemento la "funzione" toggle
@@ -45,32 +64,48 @@ const Player = ({
     setSongInfo({ ...songInfo, currentTime: e.target.value });
   };
 
-  const skipTrackHandler = (direction) => {
+  const skipTrackHandler = async (direction) => {
     let currentIndex = songs.findIndex((song) => song.id === currentSong.id);
     if (direction === 'skip-forward') {
-      setCurrentSong(songs[(currentIndex + 1) % songs.length]);
+      await setCurrentSong(songs[(currentIndex + 1) % songs.length]);
+      if (isPlaying) audioRef.current.play();
     }
     if (direction === 'skip-back') {
       if ((currentIndex - 1) % songs.length === -1) {
-        setCurrentSong(songs[songs.length - 1]);
+        await setCurrentSong(songs[songs.length - 1]);
+        if (isPlaying) audioRef.current.play();
         return;
       }
-      setCurrentSong(songs[(currentIndex - 1) % songs.length]);
+      await setCurrentSong(songs[(currentIndex - 1) % songs.length]);
+      if (isPlaying) audioRef.current.play();
     }
   };
 
+  //Add the styles
+  const trackAnim = {
+    transform: `translateX(${songInfo.animationPercentage}%)`,
+  };
   return (
     <div className="player">
-      <div className="player-controls">
+      <div className="time-control">
         <p>{getTime(songInfo.currentTime)}</p>
-        <input
-          min={0}
-          max={songInfo.durationTime || 0}
-          value={songInfo.currentTime}
-          type="range"
-          onChange={dragHandler}
-        />
-        <p>{getTime(songInfo.durationTime)}</p>
+        <div
+          style={{
+            background: `linear-gradient(to right, ${currentSong.color[0]},${currentSong.color[1]})`,
+          }}
+          className="track"
+        >
+          <input
+            min={0}
+            max={songInfo.durationTime || 0}
+            value={songInfo.currentTime}
+            type="range"
+            onChange={dragHandler}
+          />
+          <div style={trackAnim} className="animate-track"></div>
+        </div>
+        {/* This if statement avoid the Nan error on the durationTime */}
+        <p>{songInfo.durationTime ? getTime(songInfo.durationTime) : '0:00'}</p>
       </div>
       <div className="play-control">
         {/* icon={fa} it's a prop from the import of the logo */}
